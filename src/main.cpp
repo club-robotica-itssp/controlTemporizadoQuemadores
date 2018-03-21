@@ -7,6 +7,14 @@
   Jesús David (Asesor)
 
   16/03/2018
+
+
+  Sobre las librerias.
+    En cada liinea de adición de las librerias utilizadas en el proyecto se
+  al final de la linea se muestra el numero correspondiente al ID utilizao para
+  su instalación via "pio lib install", las librerias que no con tengan este
+  numero se incluyen en el proyecto.
+
 */
 
 // Librerias.
@@ -113,16 +121,17 @@ void loop() {
     Serial.println("En loop principal.");
   #endif
 
-  lcd.clear(); // Esperando por una pulsación. NOTA: BONTONES A Y B CON PULL-UP.
-  if(digitalRead(BOTON_A)) {
+  lcd.clear();
+  // Esperando por una pulsación. NOTA: BONTONES A Y B CON PULL-UP.
+  if(!digitalRead(BOTON_A)) {
     #ifdef DEPURACION
       delay(1000);
       Serial.println("Se pulso BOTON_A");
     #endif
 
-    mostrarHora();
+    setHoraA();
   }
-  else if(digitalRead(BOTON_B)) {
+  else if(!digitalRead(BOTON_B)) {
     #ifdef DEPURACION
       delay(1000);
       Serial.println("Se pulso BOTON_B");
@@ -130,7 +139,7 @@ void loop() {
 
   }
   else {
-    setHoraA();
+    mostrarHora();
   }
 }
 
@@ -210,6 +219,7 @@ void setHoraA() {
     lcd.setCursor(i,1);
     if(i==2){lcd.print(":");
   }
+
   else {
     tecla=teclado.waitForKey(); // Esperamos a que pulse un boton.
     lcd.print(tecla);            //Escribimos el el valor de pulsacion en el LCD.
@@ -280,7 +290,7 @@ void setHoraA() {
 }
 
 void comparacion() {
-  while(min1!=min2||hor1!=hor2||!T_A) {    //Mientras la hora de la alarma escrita por el usuario, y la hora real sean diferentes, //escribiremos la hora real y la de la alarma en la pantalla.
+  while(min1!=min2||hor1!=hor2) {    //Mientras la hora de la alarma escrita por el usuario, y la hora real sean diferentes, //escribiremos la hora real y la de la alarma en la pantalla.
     DateTime now = RTC.now();
     lcd.setCursor(0,0);
     lcd.print("HORA");
@@ -337,15 +347,10 @@ void comparacion() {
       }
 
       if (!digitalRead(BOTON_A)) {
-        T_A = LOW;
         Serial.println("Estoy en el delay de millis");
-        digitalWrite(BUZZER, HIGH);
-      }
-      else {
-        digitalWrite(BUZZER, LOW);
+        return;
       }
     }
   }
-  T_A = HIGH;
   Serial.println("Estoy saliendo del while de comparacion");
 }
