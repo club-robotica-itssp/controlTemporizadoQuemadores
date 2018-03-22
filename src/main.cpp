@@ -36,6 +36,7 @@
 // Fucniones. Declaraciones.
 void mostrarHora();
 void setHoraA();
+void setHoraB();
 void comparacion();
 
 // Constantes para Keypad.
@@ -59,13 +60,18 @@ bool T_A = false;
 int i;
 int tecla1;
 int seg1,min1,hor1,ano1,mes1,dia1; //Hora que trae el reloj DS1307RTC
-int min2,hor2; //Hora que defino yo como alarma. Solo me interesan la hora y los minutos
-int min3,hor3;
+int min2 = 0;
+int hor2 = 0;
+int min3 = 0;
+int hor3 = 0;
+
+// Banderas.
+bool primerInicio = true;
 
 // Instanciaciones.
 Keypad teclado = Keypad(makeKeymap(teclas), pinesF, pinesC, filas, columnas);
 RTC_DS1307 RTC;
-LiquidCrystal_I2C lcd(0x3F,16,2);
+LiquidCrystal_I2C lcd(0x3F,16,4);
 
 void setup() {
   // Elementos para depuracion serial.
@@ -137,14 +143,35 @@ void loop() {
       Serial.println("Se pulso BOTON_B");
     #endif
 
+    setHoraB();
   }
   else {
+    // Mostrando las horas real y programadas.
     mostrarHora();
+
+    // Realizando la comparacion entre hora real y programada.
+    if((min2==0)||(hor2==0)||(min3==0)||(hor3==0)) {
+      primerInicio = false;
+    }
+    else {
+      primerInicio = true;
+    }
+    if(((min1 >= min2)&&(hor1 >= hor2)) && primerInicio) {
+      Serial.print("LISTO_AAAA");
+    }
+    if(((min1 >= min3)&&(hor1 >= hor3)) && primerInicio) {
+      Serial.print("LISTO_BBBB");
+    }
   }
 }
 
 // Funciones. Definiciones.
 void mostrarHora() {
+  #ifdef DEPURACION
+    delay(1000);
+    Serial.println("Se muestra hora.");
+  #endif
+
   DateTime now = RTC.now();
   // En la anterior linea ya suponemos que el reloj ha sido SETeado en otro momento
   // y que la hora ya esta en la memoria. Esa hora esta en now().
@@ -200,15 +227,41 @@ void mostrarHora() {
     lcd.setCursor(7,1);
   }
   lcd.print(seg1);
+
+  // Tiempos de acción A
+  lcd.setCursor(0,2);
+  lcd.print("Tiempo A: ");
+  lcd.setCursor(10,2);
+  lcd.print(hor2);
+  lcd.setCursor(12,2);
+  lcd.print(":");
+  lcd.setCursor(13,2);
+  lcd.print(min2);
+
+  // Tiempos de acción B
+  lcd.setCursor(0,3);
+  lcd.print("Tiempo B: ");
+  lcd.setCursor(10,3);
+  lcd.print(hor3);
+  lcd.setCursor(12,3);
+  lcd.print(":");
+  lcd.setCursor(13,3);
+  lcd.print(min3);
+
+
   delay(1000);
 }
 
 void setHoraA() {
+  #ifdef DEPURACION
+    delay(1000);
+    Serial.println("Se esta configurando la hora A");
+  #endif
   //Cuando se pulse el pulsador...
   //Pediremos al usuario que escriba la hora en la que quiere hacer sonar la alarma.
   lcd.clear();
   lcd.setCursor(0,0);
-  lcd.print("Escribe la hora");
+  lcd.print("Escribe la hora A");
   delay(1000);
 
   //La hora, constara de cuatro numeros ( 2 para los minutos y 2 para los segundos )
@@ -268,89 +321,77 @@ void setHoraA() {
  delay(3000);
  lcd.clear();
 
- //////////////////////////////
- ////////////////////////
- comparacion();
- /////////////////////
- ///////////////////////////////////////////////////////
- //En cuanto sea la hora, saltara la alarma, se encenderan los LEDs y sonara el zumbador.
+ return;
+}
+
+void setHoraB() {
+  #ifdef DEPURACION
+    delay(1000);
+    Serial.println("Se esta configurando la hora B");
+  #endif
+  //Cuando se pulse el pulsador...
+  //Pediremos al usuario que escriba la hora en la que quiere hacer sonar la alarma.
+  lcd.clear();
+  lcd.setCursor(0,0);
+  lcd.print("Escribe la hora B");
+  delay(1000);
+
+  //La hora, constara de cuatro numeros ( 2 para los minutos y 2 para los segundos )
+  // Por ello, daremos 5 vueltas dentro de un for, esperando a que el usuario pulse una tecla.
+  // En la tercera vuelta (i=2), no debemos pedir al usuario que nos de un valor, sino que escribiremos " : " que separan las horas de los minutos.
+  for(i=0; i<5; i++){
+    char tecla;
+    lcd.setCursor(i,1);
+    if(i==2){lcd.print(":");
+  }
+
+  else {
+    tecla=teclado.waitForKey(); // Esperamos a que pulse un boton.
+    lcd.print(tecla);            //Escribimos el el valor de pulsacion en el LCD.
+
+    switch(tecla) {              // Pulsacion es de tipo char, por eso hemos definido al principio de programa "pulsacion1", de tipo int, Que tendra un valor numerico que sera el de la hora en la que el usuario ha definido la alarma.Este valor, sera dependiendo el boton pulsado en el teclado matricial, que hemos guardado en
+      case '1': tecla1=1;
+      break;
+      case '2': tecla1=2;
+      break;
+      case '3': tecla1=3;
+      break;
+      case '4': tecla1=4;
+      break;
+      case '5': tecla1=5;
+      break;
+      case '6': tecla1=6;
+      break;
+      case '7': tecla1=7;
+      break;
+      case '8': tecla1=8;
+      break;
+      case '9': tecla1=9;
+      break;
+      case '0': tecla1=0;
+    }
+
+    switch(i) {
+      case 0: hor3=tecla1*10;       //Sabemos que el primer valor de los minutos sera un valor en decimas
+      break;
+      case 1: hor3=hor3+tecla1;     // El segundo valor de los minutos que sera una unidades
+      break;
+      case 3: min3=tecla1*10;       //Primer valor de los segundos que sera un valor en decimas
+      break;
+      case 4: min3=min3+tecla1;     //Segundo valor de los segundos que sera en unidades
+      break;
+    }
+  }
+  delay(500);
+ }
 
  lcd.clear();
  lcd.setCursor(0,0);
- lcd.print("ES LA HORA!!");
-
- while(digitalRead(BOTON_A)) {
-   //Hasta que pulsemos de nuevo alarma, no va a parar de hacer luz y ruido.
-   digitalWrite(BUZZER,HIGH);
-   delay(1000);
-   digitalWrite(BUZZER,LOW);
-   delay(1000);
- }                    //Alarma es un pulsador. Hay que quedarse un rato hasta que lea justo 1.
+ lcd.print("Encendido 2");
+ lcd.setCursor(0,1);
+ lcd.print("Configurado");
  delay(3000);
-}
+ lcd.clear();
 
-void comparacion() {
-  while(min1!=min2||hor1!=hor2) {    //Mientras la hora de la alarma escrita por el usuario, y la hora real sean diferentes, //escribiremos la hora real y la de la alarma en la pantalla.
-    DateTime now = RTC.now();
-    lcd.setCursor(0,0);
-    lcd.print("HORA");
-    lcd.setCursor(0,1);
-    lcd.print("Enc.");
-
-    lcd.setCursor(6,0) ; //dibujamos la hora real
-    hor1=now.hour();
-    if(dia1<10) {
-       lcd.print("0");
-       lcd.setCursor(7,0);
-    }
-    lcd.print(hor1);
-    lcd.setCursor(8,0);
-    lcd.print(":") ;
-    lcd.setCursor(9,0);
-    min1=now.minute();
-    if(min1<10) {
-      lcd.print("0");
-      lcd.setCursor(10,0);
-    }
-    lcd.print(min1);
-    lcd.setCursor(11,0);
-    lcd.print(":") ;
-    lcd.setCursor(12,0);
-    seg1=now.second();
-    if(seg1<10) {
-      lcd.print("0");
-      lcd.setCursor(13,0);
-    }
-    lcd.print(seg1);
-    lcd.setCursor(6,1) ; //dibujamos la hora de la alarma
-    if(hor2<10) {
-      lcd.print("0");
-      lcd.setCursor(7,1);
-    }
-    lcd.print(hor2);
-    lcd.setCursor(8,1);
-    lcd.print(":") ;
-    lcd.setCursor(9,1);
-    if(min2<10) {
-      lcd.print("0");
-      lcd.setCursor(10,1);
-    }
-    lcd.print(min2);
-
-    // Delay millis para sensar botones.
-    stateStop = true;
-    while (stateStop) {
-      millisActual = millis();
-      if((millisActual - millisAnterior) >= 1000) {
-        millisAnterior = millisActual;
-     	  stateStop = LOW;
-      }
-
-      if (!digitalRead(BOTON_A)) {
-        Serial.println("Estoy en el delay de millis");
-        return;
-      }
-    }
-  }
-  Serial.println("Estoy saliendo del while de comparacion");
+ return;
 }
