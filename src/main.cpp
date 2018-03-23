@@ -24,14 +24,17 @@
 #include "LiquidCrystal_I2C.h"
 #include <TimeLib.h>  // 44
 #include <RTClib.h>   // 83
+#include <Servo.h>    // 883
 
 // Modo depuracion. COMENTAR PARA DESACTIVAR LA DEPURACION.
-#define DEPURACION
+//#define DEPURACION
 
 // Definiciones
 #define BOTON_A 50 // Push para configuración hora A
 #define BOTON_B 52 // Push para configuración hora B
 #define BUZZER  12 // Indicador.
+#define SERVO_A 10 // Servomotor A
+#define SERVO_B 11 // Servomotor B
 
 // Fucniones. Declaraciones.
 void mostrarHora();
@@ -72,6 +75,8 @@ bool primerInicio = true;
 Keypad teclado = Keypad(makeKeymap(teclas), pinesF, pinesC, filas, columnas);
 RTC_DS1307 RTC;
 LiquidCrystal_I2C lcd(0x3F,16,4);
+Servo quemadorA;
+Servo quemadorB;
 
 void setup() {
   // Elementos para depuracion serial.
@@ -103,6 +108,18 @@ void setup() {
   #ifdef DEPURACION
     delay(1000);
     Serial.println("...  Inicializada LCD ...");
+  #endif
+
+  // Inicializando servos.
+  quemadorA.attach(SERVO_A);
+  quemadorB.attach(SERVO_B);
+  for(int i = quemadorA.read(); i>=10; i--) {
+    quemadorA.write(i);
+    delay(50);
+  }
+  #ifdef DEPURACION
+    delay(1000);
+    Serial.println("...  Inicializados servos ...");
   #endif
 
   // Inicialización de contadores para retardo millis.
@@ -157,10 +174,18 @@ void loop() {
       primerInicio = true;
     }
     if(((min1 >= min2)&&(hor1 >= hor2)) && primerInicio) {
-      Serial.print("LISTO_AAAA");
+      for(int i = 5; i<=175; i++) {
+        quemadorA.write(i);
+        delay(50);
+      }
+      #ifdef DEPURACION
+        Serial.println("Listo tiempo A");
+      #endif
     }
     if(((min1 >= min3)&&(hor1 >= hor3)) && primerInicio) {
-      Serial.print("LISTO_BBBB");
+      #ifdef DEPURACION
+        Serial.println("Listo tiempo B");
+      #endif
     }
   }
 }
