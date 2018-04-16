@@ -29,10 +29,13 @@
 // Modo depuracion. COMENTAR PARA DESACTIVAR LA DEPURACION.
 //#define DEPURACION
 
+// Descomentar para actualizar hora con la del sistema.
+//#define SETDATE
+
 // Definiciones
 #define BOTON_A 50 // Push para configuración hora A
 #define BOTON_B 52 // Push para configuración hora B
-#define BUZZER  12 // Indicador.
+#define IGNITOR  12 // Indicador.
 #define SERVO_A 10 // Servomotor A
 #define SERVO_B 11 // Servomotor B
 
@@ -79,6 +82,7 @@ Servo quemadorA;
 Servo quemadorB;
 
 void setup() {
+
   // Elementos para depuracion serial.
   #ifdef DEPURACION
     Serial.begin(9600);
@@ -94,8 +98,10 @@ void setup() {
   #endif
 
   // Configurando modulo de reloj.
-  RTC.begin();
-  RTC.adjust(DateTime(__DATE__, __TIME__));
+  RTC.begin(); // Iniciando.
+  #ifdef SETDATE // En caso de quere actualizar la hora.
+    RTC.adjust(DateTime(__DATE__, __TIME__));
+  #endif
   #ifdef DEPURACION
     delay(1000);
     Serial.println("...  Configurado reloj (RTC) ...");
@@ -113,9 +119,10 @@ void setup() {
   // Inicializando servos.
   quemadorA.attach(SERVO_A);
   quemadorB.attach(SERVO_B);
-  for(int i = quemadorA.read(); i>=10; i--) {
+  for(int i = quemadorA.read(); i>=5; i--) {
     quemadorA.write(i);
-    delay(50);
+    quemadorB.write(i);
+    delay(1);
   }
   #ifdef DEPURACION
     delay(1000);
@@ -129,7 +136,10 @@ void setup() {
   // Configurando entradas y salidas.
   pinMode(BOTON_A, INPUT_PULLUP); // Activando entrada para BOTON_A con PULL-UP.
   pinMode(BOTON_B, INPUT_PULLUP); // Activando entrada para BOTON_A con PULL-UP.
-  pinMode(BUZZER,OUTPUT);
+  pinMode(IGNITOR,OUTPUT);
+
+  // Asegurando que inicie el chispero apagado-
+  digitalWrite(IGNITOR, LOW);
 
   #ifdef DEPURACION
     delay(1000);
@@ -175,14 +185,32 @@ void loop() {
     }
     if(((min1 >= min2)&&(hor1 >= hor2)) && primerInicio) {
       for(int i = 5; i<=175; i++) {
+        // Encendiendo chispero
+        digitalWrite(IGNITOR, HIGH);
         quemadorA.write(i);
         delay(50);
       }
+      // Apagando chispero.
+      digitalWrite(IGNITOR, LOW);
+      min2 = 15;
+      hor2 = 15;
+
       #ifdef DEPURACION
         Serial.println("Listo tiempo A");
       #endif
     }
     if(((min1 >= min3)&&(hor1 >= hor3)) && primerInicio) {
+      for(int i = 5; i<=175; i++) {
+        // Encendiendo chispero
+        digitalWrite(IGNITOR, HIGH);
+        quemadorB.write(i);
+        delay(50);
+      }
+      // Apagando chispero.
+      digitalWrite(IGNITOR, LOW);
+      min3 = 15;
+      hor3 = 15;
+
       #ifdef DEPURACION
         Serial.println("Listo tiempo B");
       #endif
